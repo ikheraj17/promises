@@ -9,12 +9,49 @@
  */
 
 var fs = require('fs');
+var request = require('request');
 var Promise = require('bluebird');
 
 
 
 var fetchProfileAndWriteToFile = function(readFilePath, writeFilePath) {
-  // TODO
+  return new Promise((resolve, reject) => {
+    fs.readFile(readFilePath, (err, data) => {
+      if (err) {
+        reject(err);
+      } else {
+        let filetext = data.toString();
+        let endLine = filetext.indexOf('\n');
+        let username = filetext.substring(0, endLine);
+        resolve(username);
+      }
+    });
+  })
+    .then(function(username) {
+      return new Promise((resolve, reject) => {
+        request.get({url: 'https://api.github.com/users/' + username}, (err, res, body) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(body);
+          }
+        });
+      });
+    })
+    .then(function (bodyObj) {
+      return new Promise((resolve, reject) => {
+        fs.writeFile(writeFilePath, bodyObj, (err) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve();
+          }
+        });
+      });
+    })
+    .catch((error) => {
+      console.log(error);
+    });
 };
 
 // Export these functions so we can test them
